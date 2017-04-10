@@ -51,7 +51,7 @@ def validateURL(url):
         else:
             ext = os.path.splitext(url)[1]
         validURL = r.status_code == 200
-        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx']
+        validFiletype = ext.lower() in ['.csv', '.xls', '.xlsx', '.pdf']
         return validURL, validFiletype
     except:
         print ("Error validating URL.")
@@ -85,9 +85,10 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "E0603_CEUA_gov"
-url = "http://www.cheshireeast.gov.uk/council_and_democracy/your_council/council_finance_and_governance/council_finance_and_governance.aspx"
+urls = "https://opendata.cheshireeast.gov.uk/browse?tags=spend&utf8=%E2%9C%93&page={}"
 errors = 0
 data = []
+url = 'http://example.com'
 
 #### READ HTML 1.0
 
@@ -97,40 +98,22 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-block = soup.find('div', attrs = {'class':'span8'})
-links = block.findAll('a')
-for link in links:
-    url = link['href']
-    if 'http://' not in url:
-        url = 'http://www.cheshireeast.gov.uk' + url
-    csvfile = link.text
-    if 'CSV' in csvfile:
-        Mth = csvfile.split('(')[0].strip().split(' ')[-2].strip()
-        csvYr =csvfile.split('(')[0].strip().split(' ')[-1].strip()
-        if '-' in Mth:
-             Mth = Mth.split('-')[-1].strip()
-        csvMth = Mth[:3]
+for i in range(1, 7):
+    html = urllib2.urlopen(urls.format(i))
+    soup = BeautifulSoup(html, 'lxml')
+    blocks = soup.find_all('a', attrs = {'class':'browse2-result-name-link'})
+    for block_url in blocks:
+        id_num = block_url['href'].split('/')[-1]
+        url = 'https://opendata.cheshireeast.gov.uk/api/views/{}/rows.csv?accessType=DOWNLOAD'.format(id_num)
+        csvfile = block_url.text.strip().split()
+        csvMth = csvfile[-2][:3]
+        csvYr = csvfile[-1][:4]
+        if 'Aug' in csvMth and '2012' in csvYr:
+            url = 'https://opendata.cheshireeast.gov.uk/api/file_data/45a299ef-d3a3-4a49-ad2e-420347e3233e?filename=Aug 12.pdf'
+        if 'Sep' in csvMth and '2012' in csvYr:
+            url = 'https://opendata.cheshireeast.gov.uk/api/file_data/f0b95fa5-914c-4b02-ae37-708e9788306d?filename=Sept 2012.pdf'
         csvMth = convert_mth_strings(csvMth.upper())
         data.append([csvYr, csvMth, url])
-    if 'Spend in previous years' in csvfile:
-        url = link['href']
-        html = urllib2.urlopen(url)
-        soup = BeautifulSoup(html, 'lxml')
-        block = soup.find('div', attrs = {'class':'span8'})
-        links = block.findAll('a')
-        for link in links:
-            url = link['href']
-            if 'http://' not in url:
-                url = 'http://www.cheshireeast.gov.uk' + url
-            csvfile = link.text
-            if 'CSV' in csvfile:
-                Mth = csvfile.split('(')[0].strip().split(' ')[-2].strip()
-                csvYr =csvfile.split('(')[0].strip().split(' ')[-1].strip()
-                if '-' in Mth:
-                     Mth = Mth.split('-')[-1].strip()
-                csvMth = Mth[:3]
-                csvMth = convert_mth_strings(csvMth.upper())
-                data.append([csvYr, csvMth, url])
 
 #### STORE DATA 1.0
 

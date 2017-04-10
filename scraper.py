@@ -101,7 +101,7 @@ soup = BeautifulSoup(html, 'lxml')
 import requests
 
 for i in range(1, 7):
-    html = requests.get(urls.format(i))
+    html = requests.get(urls.format(i), verify=False)
     soup = BeautifulSoup(html.text, 'lxml')
     blocks = soup.find_all('a', attrs = {'class':'browse2-result-name-link'})
     for block_url in blocks:
